@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BabyCareBot - Дашборд</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .activity-item {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .feeding-item {
+            border-left-color: #ff9a9e;
+        }
+        .diaper-item {
+            border-left-color: #a8edea;
+        }
+        .icon-feeding {
+            color: #ff9a9e;
+        }
+        .icon-diaper {
+            color: #a8edea;
+        }
+        .header-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 20px 20px 0 0;
+        }
+        .chart-container {
+            height: 300px;
+            position: relative;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        .family-info {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #333;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid py-4">
+        <!-- Заголовок -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="dashboard-card header-bg text-center py-4">
+                    <h1><i class="fas fa-baby"></i> BabyCareBot</h1>
+                    <p class="mb-0">Дашборд для родителей</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Информация о малыше -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="dashboard-card p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4><i class="fas fa-baby"></i> Информация о малыше</h4>
+                            <p class="mb-0">Данные загружаются автоматически</p>
+                        </div>
+                        <div class="col-md-4 text-end">
+                            <button class="btn btn-primary" onclick="refreshData()">
+                                <i class="fas fa-sync-alt"></i> Обновить
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Информация о малыше -->
+        <div class="row mb-4" id="babyInfo" style="display: none;">
+            <div class="col-12">
+                <div class="family-info">
+                    <h4><i class="fas fa-baby"></i> <span id="babyName"></span></h4>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <strong>Возраст:</strong><br>
+                            <span id="babyAge"></span>
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Вес:</strong><br>
+                            <span id="babyWeight"></span> кг
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Рост:</strong><br>
+                            <span id="babyHeight"></span> см
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Пол:</strong><br>
+                            <span id="babyGender"></span>
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Дата рождения:</strong><br>
+                            <span id="babyBirthDate"></span>
+                        </div>
+                        <div class="col-md-2">
+                            <strong>Семья:</strong><br>
+                            <span id="familyName"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="row mb-4" id="statsSection" style="display: none;">
+            <div class="col-md-4">
+                <div class="stats-card text-center">
+                    <i class="fas fa-utensils fa-2x mb-2"></i>
+                    <h3 id="totalFeedings">0</h3>
+                    <p class="mb-0">Кормлений за неделю</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card text-center">
+                    <i class="fas fa-baby fa-2x mb-2"></i>
+                    <h3 id="totalDiapers">0</h3>
+                    <p class="mb-0">Смен подгузников</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card text-center">
+                    <i class="fas fa-chart-line fa-2x mb-2"></i>
+                    <h3 id="totalActivities">0</h3>
+                    <p class="mb-0">Всего активностей</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- График статистики -->
+        <div class="row mb-4" id="chartSection" style="display: none;">
+            <div class="col-12">
+                <div class="dashboard-card p-4">
+                    <h5><i class="fas fa-chart-bar"></i> Статистика по дням</h5>
+                    <div class="chart-container">
+                        <canvas id="statsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Настройки ухода -->
+        <div class="row mb-4" id="careSettingsSection" style="display: none;">
+            <div class="col-12">
+                <div class="dashboard-card p-4">
+                    <h5><i class="fas fa-cog"></i> Настройки ухода</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <i class="fas fa-utensils fa-2x text-primary mb-2"></i>
+                                <h6>Кормление</h6>
+                                <p class="mb-0"><strong><span id="feedInterval">3</span> ч.</strong></p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <i class="fas fa-baby fa-2x text-info mb-2"></i>
+                                <h6>Подгузники</h6>
+                                <p class="mb-0"><strong><span id="diaperInterval">2</span> ч.</strong></p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <i class="fas fa-bath fa-2x text-warning mb-2"></i>
+                                <h6>Купание</h6>
+                                <p class="mb-0"><strong><span id="bathTime">19:00</span></strong></p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3">
+                                <i class="fas fa-lightbulb fa-2x text-success mb-2"></i>
+                                <h6>Советы</h6>
+                                <p class="mb-0"><strong><span id="tipsTime">09:00</span></strong></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Последняя активность -->
+        <div class="row mb-4" id="activitySection" style="display: none;">
+            <div class="col-12">
+                <div class="dashboard-card p-4">
+                    <h5><i class="fas fa-history"></i> Последняя активность</h5>
+                    <div id="activityList">
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p>Загрузка активности...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Члены семьи -->
+        <div class="row mb-4" id="membersSection" style="display: none;">
+            <div class="col-12">
+                <div class="dashboard-card p-4">
+                    <h5><i class="fas fa-users"></i> Члены семьи</h5>
+                    <div id="membersList">
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin fa-2x"></i>
+                            <p>Загрузка членов семьи...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let currentFamilyId = null;
+        let statsChart = null;
+
+        // Загрузка данных малыша
+        async function loadBabyData() {
+            try {
+                // Используем фиксированный family_id = 1
+                const familyId = 1;
+                currentFamilyId = familyId;
+                
+                // Загружаем информацию о малыше
+                const babyResponse = await fetch(`/api/baby/${familyId}`);
+                const babyData = await babyResponse.json();
+                
+                displayBabyInfo(babyData);
+                
+                // Загружаем статистику
+                const statsResponse = await fetch(`/api/stats/${familyId}`);
+                const statsData = await statsResponse.json();
+                
+                displayStats(statsData);
+                createStatsChart(statsData);
+                
+                // Загружаем активность
+                const activityResponse = await fetch(`/api/activity/${familyId}`);
+                const activityData = await activityResponse.json();
+                
+                displayActivity(activityData);
+                
+                // Показываем все секции
+                document.getElementById('babyInfo').style.display = 'block';
+                document.getElementById('careSettingsSection').style.display = 'block';
+                document.getElementById('statsSection').style.display = 'block';
+                document.getElementById('chartSection').style.display = 'block';
+                document.getElementById('activitySection').style.display = 'block';
+                document.getElementById('membersSection').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Ошибка загрузки данных малыша:', error);
+            }
+        }
+
+
+
+        // Отображение информации о малыше
+        function displayBabyInfo(babyData) {
+            // Отображаем информацию о малыше
+            document.getElementById('babyName').textContent = babyData.baby.name;
+            document.getElementById('babyAge').textContent = `${babyData.baby.age_months} мес.`;
+            document.getElementById('babyWeight').textContent = babyData.baby.weight;
+            document.getElementById('babyHeight').textContent = babyData.baby.height;
+            document.getElementById('babyGender').textContent = babyData.baby.gender;
+            document.getElementById('babyBirthDate').textContent = babyData.baby.birth_date;
+            document.getElementById('familyName').textContent = babyData.family_name;
+            
+            // Отображаем настройки ухода
+            document.getElementById('feedInterval').textContent = babyData.settings.feed_interval;
+            document.getElementById('diaperInterval').textContent = babyData.settings.diaper_interval;
+            document.getElementById('bathTime').textContent = babyData.settings.bath_time;
+            document.getElementById('tipsTime').textContent = babyData.settings.tips_time;
+            
+            // Отображаем членов семьи
+            const membersList = document.getElementById('membersList');
+            membersList.innerHTML = '';
+            
+            babyData.members.forEach(member => {
+                const memberDiv = document.createElement('div');
+                memberDiv.className = 'activity-item';
+                memberDiv.innerHTML = `
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <strong>${member.role}</strong> ${member.name}
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <span class="badge bg-primary">ID: ${member.user_id}</span>
+                        </div>
+                    </div>
+                `;
+                membersList.appendChild(memberDiv);
+            });
+        }
+
+        // Отображение статистики
+        function displayStats(statsData) {
+            const totalFeedings = statsData.reduce((sum, day) => sum + day.feedings, 0);
+            const totalDiapers = statsData.reduce((sum, day) => sum + day.diapers, 0);
+            const totalActivities = totalFeedings + totalDiapers;
+            
+            document.getElementById('totalFeedings').textContent = totalFeedings;
+            document.getElementById('totalDiapers').textContent = totalDiapers;
+            document.getElementById('totalActivities').textContent = totalActivities;
+        }
+
+        // Создание графика статистики
+        function createStatsChart(statsData) {
+            const ctx = document.getElementById('statsChart').getContext('2d');
+            
+            if (statsChart) {
+                statsChart.destroy();
+            }
+            
+            const labels = statsData.map(day => day.date).reverse();
+            const feedingData = statsData.map(day => day.feedings).reverse();
+            const diaperData = statsData.map(day => day.diapers).reverse();
+            
+            statsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Кормления',
+                            data: feedingData,
+                            backgroundColor: '#ff9a9e',
+                            borderColor: '#ff9a9e',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Смены подгузников',
+                            data: diaperData,
+                            backgroundColor: '#a8edea',
+                            borderColor: '#a8edea',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                stepSize: 1
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Отображение активности
+        function displayActivity(activityData) {
+            const activityList = document.getElementById('activityList');
+            activityList.innerHTML = '';
+            
+            if (activityData.length === 0) {
+                activityList.innerHTML = '<div class="text-center text-muted">Активности пока нет</div>';
+                return;
+            }
+            
+            activityData.forEach(activity => {
+                const activityDiv = document.createElement('div');
+                activityDiv.className = `activity-item ${activity.type === 'feeding' ? 'feeding-item' : 'diaper-item'}`;
+                
+                const icon = activity.type === 'feeding' ? 'fa-utensils icon-feeding' : 'fa-baby icon-diaper';
+                const typeText = activity.type === 'feeding' ? 'Кормление' : 'Смена подгузника';
+                
+                activityDiv.innerHTML = `
+                    <div class="row align-items-center">
+                        <div class="col-md-2">
+                            <i class="fas ${icon} fa-lg"></i>
+                        </div>
+                        <div class="col-md-3">
+                            <strong>${typeText}</strong>
+                        </div>
+                        <div class="col-md-2">
+                            ${activity.time}
+                        </div>
+                        <div class="col-md-2">
+                            ${activity.date}
+                        </div>
+                        <div class="col-md-3 text-end">
+                            <small class="text-muted">${activity.author}</small>
+                        </div>
+                    </div>
+                `;
+                activityList.appendChild(activityDiv);
+            });
+        }
+
+        // Обновление данных
+        function refreshData() {
+            if (currentFamilyId) {
+                loadBabyData();
+            }
+        }
+
+        // Загрузка при старте
+        document.addEventListener('DOMContentLoaded', function() {
+            loadBabyData();
+        });
+    </script>
+</body>
+</html>
+

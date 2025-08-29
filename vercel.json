@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "mini_app/wsgi.py",
+      "use": "@vercel/python"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "mini_app/wsgi.py"
+    }
+  ],
+  "env": {
+    "PYTHONPATH": "mini_app"
+  }
+}
