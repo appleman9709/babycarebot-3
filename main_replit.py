@@ -455,101 +455,123 @@ async def send_reminder(family_id, message):
 
 async def check_feeding_reminder():
     """Проверить напоминания о кормлении"""
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("SELECT DISTINCT family_id FROM families")
-    families = cur.fetchall()
-    conn.close()
-    
-    for (family_id,) in families:
-        settings = get_settings(family_id)
-        if not settings:
-            continue
-            
-        last_feeding = get_last_feeding(family_id)
-        if not last_feeding:
-            continue
-            
-        try:
-            last_time = datetime.fromisoformat(last_feeding)
-            now = get_thai_time()
-            hours_passed = (now - last_time).total_seconds() / 3600
-            
-            if hours_passed >= settings['feed_interval']:
-                await send_reminder(family_id, f"🍼 Время кормить малыша! Прошло {int(hours_passed)} часов с последнего кормления.")
-        except Exception as e:
-            print(f"Ошибка проверки напоминания о кормлении для семьи {family_id}: {e}")
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT id FROM families")
+        families = cur.fetchall()
+        conn.close()
+        
+        for (family_id,) in families:
+            try:
+                settings = get_settings(family_id)
+                if not settings:
+                    continue
+                    
+                last_feeding = get_last_feeding(family_id)
+                if not last_feeding:
+                    continue
+                    
+                last_time = datetime.fromisoformat(last_feeding)
+                now = get_thai_time()
+                hours_passed = (now - last_time).total_seconds() / 3600
+                
+                if hours_passed >= settings['feed_interval']:
+                    await send_reminder(family_id, f"🍼 Время кормить малыша! Прошло {int(hours_passed)} часов с последнего кормления.")
+            except Exception as e:
+                print(f"Ошибка проверки напоминания о кормлении для семьи {family_id}: {e}")
+                continue
+    except Exception as e:
+        print(f"Ошибка в check_feeding_reminder: {e}")
 
 async def check_diaper_reminder():
     """Проверить напоминания о смене подгузника"""
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("SELECT DISTINCT family_id FROM families")
-    families = cur.fetchall()
-    conn.close()
-    
-    for (family_id,) in families:
-        settings = get_settings(family_id)
-        if not settings:
-            continue
-            
-        last_diaper = get_last_diaper(family_id)
-        if not last_diaper:
-            continue
-            
-        try:
-            last_time = datetime.fromisoformat(last_diaper)
-            now = get_thai_time()
-            hours_passed = (now - last_time).total_seconds() / 3600
-            
-            if hours_passed >= settings['diaper_interval']:
-                await send_reminder(family_id, f"👶 Время сменить подгузник! Прошло {int(hours_passed)} часов с последней смены.")
-        except Exception as e:
-            print(f"Ошибка проверки напоминания о подгузнике для семьи {family_id}: {e}")
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT id FROM families")
+        families = cur.fetchall()
+        conn.close()
+        
+        for (family_id,) in families:
+            try:
+                settings = get_settings(family_id)
+                if not settings:
+                    continue
+                    
+                last_diaper = get_last_diaper(family_id)
+                if not last_diaper:
+                    continue
+                    
+                last_time = datetime.fromisoformat(last_diaper)
+                now = get_thai_time()
+                hours_passed = (now - last_time).total_seconds() / 3600
+                
+                if hours_passed >= settings['diaper_interval']:
+                    await send_reminder(family_id, f"👶 Время сменить подгузник! Прошло {int(hours_passed)} часов с последней смены.")
+            except Exception as e:
+                print(f"Ошибка проверки напоминания о подгузнике для семьи {family_id}: {e}")
+                continue
+    except Exception as e:
+        print(f"Ошибка в check_diaper_reminder: {e}")
 
 async def send_tips():
     """Отправить советы"""
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("SELECT DISTINCT family_id FROM families")
-    families = cur.fetchall()
-    conn.close()
-    
-    tips = [
-        "💡 Совет: Регулярное кормление помогает установить режим дня малыша",
-        "💡 Совет: Не забывайте про массаж - он полезен для развития ребенка",
-        "💡 Совет: Следите за температурой в комнате малыша (20-22°C)",
-        "💡 Совет: Регулярные прогулки укрепляют иммунитет ребенка",
-        "💡 Совет: Читайте малышу книги - это развивает речь и воображение"
-    ]
-    
-    for (family_id,) in families:
-        settings = get_settings(family_id)
-        if settings and settings['tips_enabled']:
-            tip = tips[get_thai_date().day % len(tips)]
-            await send_reminder(family_id, tip)
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT id FROM families")
+        families = cur.fetchall()
+        conn.close()
+        
+        tips = [
+            "💡 Совет: Регулярное кормление помогает установить режим дня малыша",
+            "💡 Совет: Не забывайте про массаж - он полезен для развития ребенка",
+            "💡 Совет: Следите за температурой в комнате малыша (20-22°C)",
+            "💡 Совет: Регулярные прогулки укрепляют иммунитет ребенка",
+            "💡 Совет: Читайте малышу книги - это развивает речь и воображение"
+        ]
+        
+        for (family_id,) in families:
+            try:
+                settings = get_settings(family_id)
+                if settings and settings['tips_enabled']:
+                    tip = tips[get_thai_date().day % len(tips)]
+                    await send_reminder(family_id, tip)
+            except Exception as e:
+                print(f"Ошибка отправки советов для семьи {family_id}: {e}")
+                continue
+    except Exception as e:
+        print(f"Ошибка в send_tips: {e}")
 
 async def check_bath_reminder():
     """Проверить напоминания о купании"""
-    conn = sqlite3.connect(DB_PATH)
-    cur = conn.cursor()
-    cur.execute("SELECT DISTINCT family_id FROM families")
-    families = cur.fetchall()
-    conn.close()
-    
-    for (family_id,) in families:
-        bath_settings = get_bath_settings(family_id)
-        if not bath_settings['enabled']:
-            continue
-            
-        now = get_thai_time()
-        bath_time = now.replace(hour=bath_settings['hour'], minute=bath_settings['minute'], second=0, microsecond=0)
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("SELECT DISTINCT id FROM families")
+        families = cur.fetchall()
+        conn.close()
         
-        # Проверяем, нужно ли напомнить за час до купания
-        reminder_time = bath_time - timedelta(hours=1)
-        
-        if now.hour == reminder_time.hour and now.minute == reminder_time.minute:
-            await send_reminder(family_id, f"🛁 Напоминание: через час время купания малыша! ({bath_time.strftime('%H:%M')})")
+        for (family_id,) in families:
+            try:
+                bath_settings = get_bath_settings(family_id)
+                if not bath_settings['enabled']:
+                    continue
+                    
+                now = get_thai_time()
+                bath_time = now.replace(hour=bath_settings['hour'], minute=bath_settings['minute'], second=0, microsecond=0)
+                
+                # Проверяем, нужно ли напомнить за час до купания
+                reminder_time = bath_time - timedelta(hours=1)
+                
+                if now.hour == reminder_time.hour and now.minute == reminder_time.minute:
+                    await send_reminder(family_id, f"🛁 Напоминание: через час время купания малыша! ({bath_time.strftime('%H:%M')})")
+            except Exception as e:
+                print(f"Ошибка проверки напоминания о купании для семьи {family_id}: {e}")
+                continue
+    except Exception as e:
+        print(f"Ошибка в check_bath_reminder: {e}")
 
 @client.on(events.NewMessage(pattern='/start'))
 async def start_command(event):
@@ -977,11 +999,11 @@ async def main():
     # Инициализируем базу данных
     init_db()
     
-    # Настраиваем планировщик задач
-    scheduler.add_job(check_feeding_reminder, 'interval', minutes=30)
-    scheduler.add_job(check_diaper_reminder, 'interval', minutes=30)
-    scheduler.add_job(send_tips, 'cron', hour=9, minute=0)
-    scheduler.add_job(check_bath_reminder, 'interval', minutes=1)
+    # Настраиваем планировщик задач с обработкой ошибок
+    scheduler.add_job(check_feeding_reminder, 'interval', minutes=30, misfire_grace_time=None)
+    scheduler.add_job(check_diaper_reminder, 'interval', minutes=30, misfire_grace_time=None)
+    scheduler.add_job(send_tips, 'cron', hour=9, minute=0, misfire_grace_time=None)
+    scheduler.add_job(check_bath_reminder, 'interval', minutes=1, misfire_grace_time=None)
     
     # Запускаем планировщик
     scheduler.start()
