@@ -1,6 +1,6 @@
 language = "python3"
-run = "cd mini_app && python app_replit.py"
-entrypoint = "mini_app/app_replit.py"
+run = "python main_replit.py"
+entrypoint = "main_replit.py"
 
 [nix]
 channel = "stable-22_11"

@@ -6,6 +6,10 @@ authors = ["Your Name <your.email@example.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
+telethon = "^1.28.5"
+python-dotenv = "^1.0.0"
+APScheduler = "^3.10.4"
+pytz = "^2023.3"
 Flask = "^2.3.3"
 Werkzeug = "^2.3.7"
 
