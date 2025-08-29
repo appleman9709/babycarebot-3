@@ -1,6 +1,6 @@
 language = "python3"
-run = "bash run.sh"
-entrypoint = "run.sh"
+run = "python3 start_replit.py"
+entrypoint = "start_replit.py"
 
 [nix]
 channel = "stable-22.11"
@@ -19,3 +19,7 @@ guessImports = true
 [languages.python3]
 pattern = "**/*.py"
 syntax = "python"
+
+[deployment]
+run = ["bash", "run.sh"]
+deploymentTarget = "cloudrun"

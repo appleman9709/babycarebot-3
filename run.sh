@@ -2,7 +2,7 @@
 # Скрипт запуска для Replit
 
 echo "🚀 Установка зависимостей..."
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 
 echo "🤖 Запуск BabyCareBot..."
-python replit_start.py
+python3 replit_start.py
