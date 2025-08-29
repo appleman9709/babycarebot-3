@@ -284,19 +284,6 @@ def init_db():
     except sqlite3.OperationalError as e:
         print(f"ℹ️ Миграция diapers: {e}")
     
-    # Создаем таблицу для информации о малыше
-    cur.execute("""
-        CREATE TABLE IF NOT EXISTS baby_info (
-            family_id INTEGER PRIMARY KEY,
-            name TEXT DEFAULT 'Малыш',
-            birth_date TEXT,
-            gender TEXT DEFAULT 'Не указан',
-            weight REAL DEFAULT 0.0,
-            height REAL DEFAULT 0.0,
-            FOREIGN KEY (family_id) REFERENCES families (id)
-        )
-    """)
-    
     conn.commit()
     conn.close()
     print("✅ База данных инициализирована/обновлена")
@@ -321,10 +308,6 @@ def create_family(name, user_id):
     
     cur.execute("INSERT INTO family_members (family_id, user_id) VALUES (?, ?)", (family_id, user_id))
     cur.execute("INSERT INTO settings (family_id) VALUES (?)", (family_id,))
-    
-    # Создаем запись о малыше по умолчанию
-    cur.execute("INSERT INTO baby_info (family_id, name, birth_date, gender, weight, height) VALUES (?, ?, ?, ?, ?, ?)",
-               (family_id, 'Малыш', None, 'Не указан', 0.0, 0.0))
     
     conn.commit()
     conn.close()
@@ -404,80 +387,6 @@ def get_family_members_with_roles(family_id):
     members = cur.fetchall()
     conn.close()
     return members
-
-def get_baby_info(family_id):
-    """Получить информацию о малыше"""
-    conn = sqlite3.connect("babybot.db")
-    cur = conn.cursor()
-    cur.execute("SELECT name, birth_date, gender, weight, height FROM baby_info WHERE family_id = ?", (family_id,))
-    result = cur.fetchone()
-    conn.close()
-    
-    if result:
-        return {
-            'name': result[0],
-            'birth_date': result[1],
-            'gender': result[2],
-            'weight': result[3],
-            'height': result[4]
-        }
-    else:
-        # Создаем запись по умолчанию
-        conn = sqlite3.connect("babybot.db")
-        cur = conn.cursor()
-        cur.execute("INSERT INTO baby_info (family_id, name, birth_date, gender, weight, height) VALUES (?, ?, ?, ?, ?, ?)",
-                   (family_id, 'Малыш', None, 'Не указан', 0.0, 0.0))
-        conn.commit()
-        conn.close()
-        return {
-            'name': 'Малыш',
-            'birth_date': None,
-            'gender': 'Не указан',
-            'weight': 0.0,
-            'height': 0.0
-        }
-
-def update_baby_info(family_id, name=None, birth_date=None, gender=None, weight=None, height=None):
-    """Обновить информацию о малыше"""
-    conn = sqlite3.connect("babybot.db")
-    cur = conn.cursor()
-    
-    # Проверяем, существует ли запись
-    cur.execute("SELECT family_id FROM baby_info WHERE family_id = ?", (family_id,))
-    exists = cur.fetchone()
-    
-    if exists:
-        # Обновляем существующую запись
-        updates = []
-        params = []
-        
-        if name is not None:
-            updates.append("name = ?")
-            params.append(name)
-        if birth_date is not None:
-            updates.append("birth_date = ?")
-            params.append(birth_date)
-        if gender is not None:
-            updates.append("gender = ?")
-            params.append(gender)
-        if weight is not None:
-            updates.append("weight = ?")
-            params.append(weight)
-        if height is not None:
-            updates.append("height = ?")
-            params.append(height)
-        
-        if updates:
-            params.append(family_id)
-            query = f"UPDATE baby_info SET {', '.join(updates)} WHERE family_id = ?"
-            cur.execute(query, params)
-    else:
-        # Создаем новую запись
-        cur.execute("INSERT INTO baby_info (family_id, name, birth_date, gender, weight, height) VALUES (?, ?, ?, ?, ?, ?)",
-                   (family_id, name or 'Малыш', birth_date, gender or 'Не указан', weight or 0.0, height or 0.0))
-    
-    conn.commit()
-    conn.close()
 
 def add_feeding(user_id, minutes_ago=0):
     conn = sqlite3.connect("babybot.db")
@@ -751,7 +660,6 @@ manual_feeding_pending = {}
 join_pending = {}
 edit_pending = {}
 edit_role_pending = {}
-baby_edit_pending = {}
 
 @client.on(events.NewMessage(pattern='/start'))
 async def start(event):
@@ -927,7 +835,6 @@ async def settings_menu(event):
         [Button.inline(bath_label, b"toggle_bath")],
         [Button.inline(tips_label, b"toggle_tips")],
         [Button.inline(f"🕐 Время советов: {tips_hour:02d}:{tips_minute:02d}", b"set_tips_time")],
-        [Button.inline("👶 Информация о малыше", b"baby_info")],
         [Button.inline("👤 Моя роль", b"my_role")],
         [Button.inline("👨‍👩‍👧 Управление семьей", b"family_management")]
     ]
@@ -936,34 +843,6 @@ async def settings_menu(event):
 async def create_family_cmd(event):
     await event.respond("👨‍👩‍👧 Введите название новой семьи:")
     family_creation_pending[event.sender_id] = True
-
-async def baby_info_menu(event):
-    """Меню для настройки информации о малыше"""
-    fid = get_family_id(event.sender_id)
-    if not fid:
-        await event.respond("❌ Ошибка: семья не найдена.")
-        return
-    
-    baby_info = get_baby_info(fid)
-    
-    text = f"👶 **Информация о малыше:**\n\n"
-    text += f"**Имя:** {baby_info['name']}\n"
-    text += f"**Дата рождения:** {baby_info['birth_date'] or 'Не указана'}\n"
-    text += f"**Пол:** {baby_info['gender']}\n"
-    text += f"**Вес:** {baby_info['weight']} кг\n"
-    text += f"**Рост:** {baby_info['height']} см\n\n"
-    text += "Выберите, что хотите изменить:"
-    
-    buttons = [
-        [Button.inline("✏️ Изменить имя", b"edit_baby_name")],
-        [Button.inline("📅 Изменить дату рождения", b"edit_baby_birth")],
-        [Button.inline("👶 Изменить пол", b"edit_baby_gender")],
-        [Button.inline("⚖️ Изменить вес", b"edit_baby_weight")],
-        [Button.inline("📏 Изменить рост", b"edit_baby_height")],
-        [Button.inline("🔙 Назад к настройкам", b"back_to_settings")]
-    ]
-    
-    await event.respond(text, buttons=buttons)
 
 async def family_management_cmd(event):
     uid = event.sender_id
@@ -1420,42 +1299,6 @@ async def callback_handler(event):
     elif data == "back_to_family_management":
         await family_management_cmd(event)
     
-    elif data == "baby_info":
-        await baby_info_menu(event)
-    
-    elif data == "edit_baby_name":
-        baby_edit_pending[event.sender_id] = "name"
-        await event.edit("✏️ Введите новое имя малыша:")
-    
-    elif data == "edit_baby_birth":
-        baby_edit_pending[event.sender_id] = "birth"
-        await event.edit("📅 Введите дату рождения малыша в формате ДД.ММ.ГГГГ (например, 15.08.2024):")
-    
-    elif data == "edit_baby_gender":
-        buttons = [
-            [Button.inline("👶 Мальчик", b"set_baby_gender_m")],
-            [Button.inline("👧 Девочка", b"set_baby_gender_f")]
-        ]
-        await event.edit("👶 Выберите пол малыша:", buttons=buttons)
-    
-    elif data == "edit_baby_weight":
-        baby_edit_pending[event.sender_id] = "weight"
-        await event.edit("⚖️ Введите вес малыша в килограммах (например, 3.5):")
-    
-    elif data == "edit_baby_height":
-        baby_edit_pending[event.sender_id] = "height"
-        await event.edit("📏 Введите рост малыша в сантиметрах (например, 52):")
-    
-    elif data == "set_baby_gender_m":
-        fid = get_family_id(event.sender_id)
-        update_baby_info(fid, gender="Мальчик")
-        await baby_info_menu(event)
-    
-    elif data == "set_baby_gender_f":
-        fid = get_family_id(event.sender_id)
-        update_baby_info(fid, gender="Девочка")
-        await baby_info_menu(event)
-    
     elif data == "back_to_settings":
         await settings_menu(event)
     
@@ -1623,65 +1466,6 @@ async def handle_text(event):
                 f"📝 Имя: {user_input}\n\n"
                 f"💡 Теперь в истории будет отображаться, кто именно ухаживает за малышом!"
             )
-        return
-
-    if uid in baby_edit_pending:
-        user_input = event.raw_text.strip()
-        edit_type = baby_edit_pending[uid]
-        fid = get_family_id(uid)
-        
-        if not fid:
-            await event.respond("❌ Ошибка: семья не найдена.")
-            del baby_edit_pending[uid]
-            return
-        
-        try:
-            if edit_type == "name":
-                if len(user_input) < 2:
-                    await event.respond("❌ Имя должно содержать минимум 2 символа.")
-                    return
-                update_baby_info(fid, name=user_input)
-                await event.respond(f"✅ Имя малыша изменено на: {user_input}")
-                
-            elif edit_type == "birth":
-                try:
-                    birth_date = datetime.strptime(user_input, "%d.%m.%Y")
-                    update_baby_info(fid, birth_date=user_input)
-                    await event.respond(f"✅ Дата рождения изменена на: {user_input}")
-                except ValueError:
-                    await event.respond("❌ Неверный формат даты. Используйте формат ДД.ММ.ГГГГ (например: 15.08.2024)")
-                    return
-                    
-            elif edit_type == "weight":
-                try:
-                    weight = float(user_input)
-                    if weight < 0 or weight > 50:
-                        await event.respond("❌ Вес должен быть от 0 до 50 кг.")
-                        return
-                    update_baby_info(fid, weight=weight)
-                    await event.respond(f"✅ Вес малыша изменен на: {weight} кг")
-                except ValueError:
-                    await event.respond("❌ Неверный формат веса. Введите число (например: 3.5)")
-                    return
-                    
-            elif edit_type == "height":
-                try:
-                    height = float(user_input)
-                    if height < 0 or height > 200:
-                        await event.respond("❌ Рост должен быть от 0 до 200 см.")
-                        return
-                    update_baby_info(fid, height=height)
-                    await event.respond(f"✅ Рост малыша изменен на: {height} см")
-                except ValueError:
-                    await event.respond("❌ Неверный формат роста. Введите число (например: 52)")
-                    return
-            
-            del baby_edit_pending[uid]
-            await baby_info_menu(event)
-            
-        except Exception as e:
-            await event.respond(f"❌ Ошибка при обновлении: {str(e)}")
-            del baby_edit_pending[uid]
         return
 
 

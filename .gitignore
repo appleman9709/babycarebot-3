@@ -28,19 +28,6 @@ ENV/
 env.bak/
 venv.bak/
 
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
-# Session files
-*.session
-*.session-journal
-
-# Environment variables
-.env
-config.env
-
 # IDE
 .vscode/
 .idea/
@@ -50,19 +37,30 @@ config.env
 
 # OS
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
 
 # Logs
 *.log
+logs/
+
+# Database (для локальной разработки)
+# babybot.db
+# *.session
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Replit
+.replit/
+.replitignore
 
 # Temporary files
 *.tmp
 *.temp
-
-# Flask
-instance/
-.webassets-cache
-
-# Telethon
-*.session
-*.session-journal

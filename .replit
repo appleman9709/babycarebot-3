@@ -1,12 +1,12 @@
 language = "python3"
-run = "python main_replit.py"
-entrypoint = "main_replit.py"
+run = "bash run.sh"
+entrypoint = "run.sh"
 
 [nix]
-channel = "stable-22_11"
+channel = "stable-22.11"
 
 [env]
-PYTHONPATH = "mini_app"
+PYTHONPATH = "${REPL_HOME}"
 
 [packager]
 language = "python3"
@@ -19,6 +19,3 @@ guessImports = true
 [languages.python3]
 pattern = "**/*.py"
 syntax = "python"
-
-[languages.python3.languageServer]
-start = [ "pylsp" ]
