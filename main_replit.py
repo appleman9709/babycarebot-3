@@ -16,12 +16,32 @@ import json
 
 # Загружаем переменные окружения
 from dotenv import load_dotenv
-load_dotenv('config.env')
+
+# Пробуем загрузить из разных источников
+load_dotenv('config.env')  # Локальный файл
+load_dotenv()  # Переменные окружения системы
 
 # Настройки бота
 API_ID = os.getenv('API_ID')
 API_HASH = os.getenv('API_HASH')
 BOT_TOKEN = os.getenv('BOT_TOKEN')
+
+# Проверяем наличие переменных окружения
+if not API_ID or not API_HASH or not BOT_TOKEN:
+    print("❌ Ошибка: Не найдены переменные окружения!")
+    print("Убедитесь, что в Replit добавлены следующие Secrets:")
+    print("- API_ID")
+    print("- API_HASH") 
+    print("- BOT_TOKEN")
+    print("\nКак добавить Secrets в Replit:")
+    print("1. Перейдите в раздел 'Secrets' (слева)")
+    print("2. Добавьте переменные с вашими значениями")
+    print("3. Перезапустите проект")
+    exit(1)
+
+print(f"✅ API_ID: {API_ID}")
+print(f"✅ API_HASH: {API_HASH[:10]}...")
+print(f"✅ BOT_TOKEN: {BOT_TOKEN[:10]}...")
 
 # Путь к базе данных на Replit
 DB_PATH = os.path.join(os.getcwd(), 'babybot.db')
